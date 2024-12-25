@@ -1,0 +1,12 @@
+POST http://localhost:8000/bands
+Content-Type: application/json
+
+{
+  "name": "string",
+  "genre": "rock",
+  "albums": []
+}
+###
+GET http://localhost:8000/bands
+
+

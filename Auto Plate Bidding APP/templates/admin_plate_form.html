@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ "Yangi raqam qo'shish" if not plate else "Raqamni tahrirlash" }}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        {{ "Yangi raqam qo'shish" if not plate else "Raqamni tahrirlash" }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+
+                    <form method="POST" action="{{ '/admin/plate/new' if not plate else '/admin/plate/' + plate.id|string + '/edit' }}" class="admin-form">
+                        <div class="mb-3">
+                            <label for="plate_number" class="form-label">Raqam</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="plate_number" 
+                                   name="plate_number"
+                                   value="{{ plate.plate_number if plate else '' }}"
+                                   pattern="[0-9]{2}[A-Z][0-9]{3}[A-Z]{2}"
+                                   placeholder="01A777BB"
+                                   required>
+                            <small class="form-text text-muted">Format: 01A777BB</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Tavsif</label>
+                            <textarea class="form-control" 
+                                     id="description" 
+                                     name="description" 
+                                     rows="3" 
+                                     required>{{ plate.description if plate else '' }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="starting_price" class="form-label">Minimal summa (so'm)</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="starting_price" 
+                                   name="starting_price"
+                                   value="{{ plate.starting_price if plate else '1000' }}"
+                                   min="1000"
+                                   step="1000"
+                                   required>
+                            <small class="form-text text-muted">Minimal summa 1000 so'm bo'lishi kerak</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="deadline" class="form-label">Tugash muddati</label>
+                            <input type="datetime-local" 
+                                   class="form-control" 
+                                   id="deadline" 
+                                   name="deadline"
+                                   value="{{ plate.deadline.strftime('%Y-%m-%dT%H:%M') if plate else '' }}"
+                                   min="{{ now.strftime('%Y-%m-%dT%H:%M') }}"
+                                   required>
+                        </div>
+
+                        {% if plate %}
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" 
+                                       class="form-check-input" 
+                                       id="is_active" 
+                                       name="is_active"
+                                       {% if plate.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="is_active">Faol</label>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between">
+                            <a href="/admin/plates" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Orqaga
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> 
+                                {{ "Qo'shish" if not plate else "Saqlash" }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

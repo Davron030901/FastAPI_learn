@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}{{ plate.plate_number }} - Avto Raqam Detalllari{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="license-plate mb-3">
+                        {{ plate.plate_number }}
+                    </div>
+                    
+                    <p class="card-text">{{ plate.description }}</p>
+                    
+                    <div class="countdown" data-deadline="{{ plate.deadline.isoformat() }}">
+                        Tugash vaqti: <span id="countdown"></span>
+                    </div>
+
+                    {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+
+                    {% if plate.is_active %}
+                        {% if request.cookies.get('token') %}
+                        <div class="highest-bid">
+                            <span class="label">Joriy eng yuqori stavka:</span>
+                            <span class="amount">{{ "{:,.0f}".format(highest_bid) if highest_bid else 0 }} so'm</span>
+                        </div>
+                        
+                        <form method="POST" action="/web/place-bid/{{ plate.id }}" class="bid-form">
+                            <div class="input-group">
+                                <span class="input-group-text">So'm</span>
+                                <input type="number" 
+                                       name="amount" 
+                                       class="form-control" 
+                                       placeholder="Stavka miqdori" 
+                                       min="{{ highest_bid + 100 if highest_bid else 1000 }}"
+                                       value="{{ highest_bid + 100 if highest_bid else 1000 }}"
+                                       step="100"
+                                       required
+                                       oninvalid="this.setCustomValidity('Stavka miqdori {{ highest_bid + 100 if highest_bid else 1000 }} so\'mdan kam bo\'lmasligi kerak')"
+                                       oninput="this.setCustomValidity('')">
+                                <button type="submit" class="btn btn-primary">Stavka qo'yish</button>
+                            </div>
+                            <small class="form-text">
+                                <i class="fas fa-info-circle"></i>
+                                Minimal stavka miqdori: {{ "{:,.0f}".format(highest_bid + 100) if highest_bid else "1,000" }} so'm
+                            </small>
+                        </form>
+                        {% else %}
+                        <div class="alert alert-info">
+                            <a href="/login-page" class="alert-link">Tizimga kiring</a> va stavka qo'ying
+                        </div>
+                        {% endif %}
+                    {% else %}
+                    <div class="alert alert-warning">
+                        Bu lot uchun auksion yakunlangan
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Stavkalar tarixi</h5>
+                </div>
+                <div class="card-body bid-list">
+                    {% if bids %}
+                    <div class="list-group list-group-flush">
+                        {% for bid in bids %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong>{{ "{:,.0f}".format(bid.amount) }} so'm</strong>
+                                <small class="text-muted">
+                                    {{ bid.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted my-3">Hali stavkalar yo'q</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateCountdown() {
+    const deadlineElement = document.querySelector('.countdown');
+    const deadline = new Date(deadlineElement.dataset.deadline);
+    const now = new Date();
+    const diff = deadline - now;
+
+    if (diff <= 0) {
+        document.getElementById('countdown').textContent = 'Auksion tugagan';
+        return;
+    }
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    document.getElementById('countdown').textContent = 
+        `${days} kun ${hours} soat ${minutes} daqiqa ${seconds} soniya`;
+}
+
+setInterval(updateCountdown, 1000);
+updateCountdown();
+
+document.addEventListener('DOMContentLoaded', function() {
+    const bidForm = document.querySelector('.bid-form');
+    const bidInput = bidForm?.querySelector('input[name="amount"]');
+    
+    if (bidForm && bidInput) {
+        bidForm.addEventListener('submit', function(e) {
+            const minBid = parseInt(bidInput.getAttribute('min'));
+            const currentBid = parseInt(bidInput.value);
+            
+            if (currentBid < minBid) {
+                e.preventDefault();
+                alert(`Stavka miqdori ${minBid.toLocaleString('uz-UZ')} so'mdan kam bo'lmasligi kerak`);
+                bidInput.focus();
+            }
+        });
+        
+        bidInput.addEventListener('input', function() {
+            const minBid = parseInt(this.getAttribute('min'));
+            const currentBid = parseInt(this.value);
+            
+            if (currentBid < minBid) {
+                this.setCustomValidity(`Stavka miqdori ${minBid.toLocaleString('uz-UZ')} so'mdan kam bo'lmasligi kerak`);
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
